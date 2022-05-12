@@ -47,7 +47,7 @@ async function run(){
        //update quantity
        app.put('/inventory/:id', async(req, res) => {
            const id = req.params.id;
-           const upQuantity = req.body.newValue.quantity;
+           const upQuantity = req.body.quantity;
            const query = {_id: ObjectId(`${id}`)};
            const options = {upsert : true};
            const updateDoc = {
@@ -56,6 +56,14 @@ async function run(){
                }
            }
            const result = await productCollection.updateOne(query, updateDoc, options);
+           res.send(result);
+       })
+
+       //delete data 
+       app.delete('/inventory/:id', async(req, res) => {
+           const id = req.params.id;
+           const query = {_id: ObjectId(id)};
+           const result = await productCollection.deleteOne(query);
            res.send(result);
        })
     }
