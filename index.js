@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const ObjectId = require('mongodb').ObjectId;
 require('dotenv').config();
@@ -26,6 +27,17 @@ async function run(){
        await client.connect();
         const productCollection = client.db("hikeServe").collection("product");
         const userCollection = client.db('hikeServe').collection('user');
+
+
+
+        //auth
+        app.post('/login', async(req,res) => {
+            const user = req.body;
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1d',
+            });
+            res.send({accessToken});
+        })
 
 
        //load data
@@ -59,11 +71,29 @@ async function run(){
            res.send(result);
        })
 
+
+       //add item
+       app.post('/item', async(req, res) => {
+           const newProduct = req.body;
+           console.log(newProduct);
+           const result = await productCollection.insertOne(newProduct);
+           res.send(result);
+       })
+
        //delete data 
        app.delete('/inventory/:id', async(req, res) => {
            const id = req.params.id;
            const query = {_id: ObjectId(id)};
            const result = await productCollection.deleteOne(query);
+           res.send(result);
+       })
+
+       //get order
+       app.get('/myitem', async(req,res) => {
+           const email = req.query.email;
+           const query = {email};
+           const cursor = productCollection.find(query);
+           const result = await cursor.toArray();
            res.send(result);
        })
     }
