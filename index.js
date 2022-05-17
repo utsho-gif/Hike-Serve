@@ -29,6 +29,22 @@ async function run(){
         const userCollection = client.db('hikeServe').collection('user');
 
 
+        //jwt verifier
+        function verifyJWT(req,res,next){
+            const authHeader = req.headers.authorization;
+            // console.log(authHeader);
+            if(!authHeader){
+                return res.status(401).send({message: 'unothorized access'})
+            }
+            const token = authHeader.split(' ')[1];
+            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET,(err, decoded)=> {
+                if(err){
+                    return res.status(403).send({message: 'forbidden access'})
+                }
+                req.decoded = decoded;
+                next();
+            })
+        }
 
         //auth
         app.post('/login', async(req,res) => {
@@ -75,7 +91,6 @@ async function run(){
        //add item
        app.post('/item', async(req, res) => {
            const newProduct = req.body;
-           console.log(newProduct);
            const result = await productCollection.insertOne(newProduct);
            res.send(result);
        })
@@ -89,12 +104,19 @@ async function run(){
        })
 
        //get order
-       app.get('/myitem', async(req,res) => {
+       app.get('/myitem', verifyJWT, async(req,res) => {
+           const decodedEmail = req.decoded.email;
            const email = req.query.email;
-           const query = {email};
-           const cursor = productCollection.find(query);
-           const result = await cursor.toArray();
-           res.send(result);
+           if(email === decodedEmail){
+            const query = {email};
+            const cursor = productCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+           }
+           else{
+               res.status(403).send({message: 'Forbidden access'});
+           }
+          
        })
     }
     finally{
